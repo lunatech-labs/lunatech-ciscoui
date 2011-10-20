@@ -1,0 +1,15 @@
+<CiscoIPPhoneMenu><Title>Services</Title>
+    <Prompt>Choose</Prompt>
+    <MenuItem>
+        <Name>Find by name</Name>
+        <URL>${baseUrl}/cisco-ui/search-name/</URL>
+    </MenuItem>
+    <MenuItem>
+        <Name>Find by telephone number</Name>
+        <URL>http://router.voip.lunatech.com:8080/cisco-ui/search-phone</URL>
+    </MenuItem>
+    <MenuItem>
+        <Name>List Lunatech employees</Name>
+        <URL>http://router.voip.lunatech.com:8080/cisco-ui/search?mail=lunatech.com</URL>
+    </MenuItem>
+</CiscoIPPhoneMenu>

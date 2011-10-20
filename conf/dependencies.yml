@@ -1,0 +1,6 @@
+# Application dependencies
+
+require:
+    - play
+    - play -> scala 0.9.1
+    - org.apache.directory.shared -> apache-ldap-api 1.0.0-M8
