@@ -7,7 +7,8 @@ import org.apache.directory.shared.ldap.model.message._
 import org.apache.directory.ldap.client.api.{LdapConnection, LdapNetworkConnection}
 import collection.JavaConverters._
 import org.apache.directory.shared.ldap.model.cursor.EntryCursor
-import org.apache.directory.shared.ldap.model.entry.Entry
+import java.net.URLEncoder
+import org.apache.directory.shared.ldap.model.entry.{Attribute, Entry}
 
 
 object Application extends Controller {
@@ -16,13 +17,13 @@ object Application extends Controller {
 
   private val searchAll = {
     connection :LdapConnection =>
-      for (res <- connection.search(configuration("ldap.baseDn"), "(&(objectclass=person)(cn=sietse*))", SearchScope.ONELEVEL, "*").asScala)
+      for (res <- connection.search(configuration("ldap.baseDn"), "(&(objectclass=person)(cn=*))", SearchScope.ONELEVEL, "*").asScala)
       yield res
   }
 
   def search = {
-    val searchResults = searchWithLdapConnection(searchAll)
-<CiscoIPPhoneMenu>
+    val searchResults = withLdapConnection(searchAll)
+Xml(<CiscoIPPhoneMenu>
   <Title>Search results</Title>
   <Prompt>Found {searchResults.size} entries</Prompt>
   {
@@ -30,15 +31,49 @@ object Application extends Controller {
       yield
       <MenuItem>
         <Name>{result.get("displayName").get().getValue()}</Name>
-        <URL>{configuration("application.baseUrl")}entries/{result.getDn}</URL>
+        <URL>{configuration("application.baseUrl")}/entries/{URLEncoder.encode(result.getDn.toString, "UTF-8")}</URL>
     </MenuItem>
   }
-</CiscoIPPhoneMenu>
+</CiscoIPPhoneMenu>)
 
 
   }
 
-  def searchWithLdapConnection[T](operation: LdapConnection => T) :T  = {
+  private def correct(number: String) = {
+    val corrected = if(number.length > 3) "0" + number else number
+    corrected.replaceAll("\\+", "00").replaceAll("\\s", "")
+  }
+
+  private def directoryEntry(name: String, attr: Attribute) = {
+    if(attr == null || attr.get().isNull)
+      null
+    else
+      <DirectoryEntry>
+        <Name>{name}</Name>
+        <Telephone>{
+          val value = attr.get.getValue.toString;
+          correct(value);
+          }</Telephone>
+      </DirectoryEntry>
+  }
+
+  def listAll = search
+
+  def entry(dn :String) = {
+    val lookup = (connection: LdapConnection) => connection.lookup(dn)
+    val entry = withLdapConnection(lookup)
+
+    Xml(<CiscoIPPhoneDirectory>
+      <Title>{entry.get("displayName").get().getValue}</Title>
+      <Prompt>Choose an entry</Prompt>
+      {directoryEntry("Main", entry.get("telephoneNumber"))}
+      {directoryEntry("Office", entry.get("telephoneNumberAlternate"))}
+      {directoryEntry("Home", entry.get("homePhone"))}
+      {directoryEntry("Mobile", entry.get("mobile"))}
+    </CiscoIPPhoneDirectory>)
+  }
+
+  private def withLdapConnection[T](operation: LdapConnection => T) :T  = {
     val connection: LdapNetworkConnection = new LdapNetworkConnection(configuration("ldap.host"), configuration("ldap.port").toInt)
     try {
       connection.bind(configuration("ldap.user"), configuration("ldap.password"))
@@ -48,6 +83,5 @@ object Application extends Controller {
       connection.close()
     }
   }
-
 
 }
