@@ -33,7 +33,7 @@ object Application extends Controller {
     )
   }
 
-  /**Searches the LDAP directory for people by name, and renders a Cisco IP Phone menu.
+  /**Searches the LDAP directory for people by name, and renders a Cisco IP Phone menu with the results.
    * If no name is given, prompts for input.
    * @param name The (first part of the) name to search on.
    */
@@ -51,6 +51,44 @@ object Application extends Controller {
         </InputItem>
       </CiscoIPPhoneInput>)
     else search(nameQuery(name))
+  }
+
+  /**Searches the LDAP directory for people by phone number, and renders a Cisco IP Phone menu with the results.
+   * If no name is given, prompts for input.
+   * @param name The number to search on.
+   */
+  def searchByNumber(number: String) = {
+    if(number == null) Xml(
+      <CiscoIPPhoneInput>
+        <Title>Find by number</Title>
+        <Prompt>Enter (part of) a number</Prompt>
+        <URL>{Router.reverse("Application.searchByNumber")}</URL>
+        <InputItem>
+          <DisplayName>Phone number</DisplayName>
+          <QueryStringParam>phone</QueryStringParam>
+          <DefaultValue></DefaultValue>
+          <InputFlags>L</InputFlags>
+        </InputItem>
+      </CiscoIPPhoneInput>)
+    else search(numberQuery(number))
+  }
+
+  /**
+   * Looks up the object for the given DN in LDAP, and renders it as a Cisco Phone Directory entry.
+   * @param dn The DN for the object to render.
+   */
+  def entry(dn: String) = {
+    val lookup = (connection: LdapConnection) => connection.lookup(dn)
+    val entry = withLdapConnection(lookup)
+
+    Xml(<CiscoIPPhoneDirectory>
+      <Title>{entry.get("displayName").get().getValue}</Title>
+      <Prompt>Choose an entry</Prompt>
+      {directoryEntry("Main", entry.get("telephoneNumber"))}
+      {directoryEntry("Office", entry.get("telephoneNumberAlternate"))}
+      {directoryEntry("Home", entry.get("homePhone"))}
+      {directoryEntry("Mobile", entry.get("mobile"))}
+    </CiscoIPPhoneDirectory>)
   }
 
   /** Corrects a phonenumber such that a Cisco phone can dial it (e.g. 00031107502600).
@@ -73,7 +111,7 @@ object Application extends Controller {
       for(result <- searchResults)
     yield
       <MenuItem>
-          <Name>{result.get("displayName").get().getValue()}</Name>
+          <Name>{result.get("displayName").get.getValue}</Name>
           <URL>{configuration("application.baseUrl")}/entries/{URLEncoder.encode(result.getDn.toString, "UTF-8")}</URL>
         </MenuItem>
       }
@@ -98,7 +136,7 @@ object Application extends Controller {
       </DirectoryEntry>
   }
 
-  /** Executes an LDAP search by a person's name, or returns all entries in the address book.
+  /** Returns an LDAP search filter that filters by a person's name, or returns all entries in the address book.
    * @param name The (first part of the) name to search on.
    */
   private def nameQuery(name: String) = name match {
@@ -106,24 +144,13 @@ object Application extends Controller {
     case _ => "(&(objectClass=person)(|(cn=%1$s*)(sn=%1$s*)(displayName=%1$s*)))".format(name)
   };
 
-
-  /**
-   * Looks up the object for the given DN in LDAP, and renders it as a Cisco Phone Directory entry.
-   * @param dn The DN for the object to render.
+  /** Returns an LDAP search filter that filters on phone number, or returns all entries in the address book.
+   * @param name The (first part of the) number to search on.
    */
-  private def entry(dn: String) = {
-    val lookup = (connection: LdapConnection) => connection.lookup(dn)
-    val entry = withLdapConnection(lookup)
-
-    Xml(<CiscoIPPhoneDirectory>
-      <Title>{entry.get("displayName").get().getValue}</Title>
-      <Prompt>Choose an entry</Prompt>
-      {directoryEntry("Main", entry.get("telephoneNumber"))}
-      {directoryEntry("Office", entry.get("telephoneNumberAlternate"))}
-      {directoryEntry("Home", entry.get("homePhone"))}
-      {directoryEntry("Mobile", entry.get("mobile"))}
-    </CiscoIPPhoneDirectory>)
-  }
+  private def numberQuery(number: String) = number match {
+    case "" => "(&(objectClass=person)(|(telephoneNumber=*)(homePhone=*)(mobile=*)))"
+    case _ => "(&(objectClass=person)(|(telephoneNumber=*%1$s*)(pager=*%1$s*)(homePhone=*%1$s*)(mobile=*%1$s*)))".format(number)
+  };
 
   /** Executes an operation on a new LDAP connection, then closes the connection.
    * @param operation The operation to perform.
