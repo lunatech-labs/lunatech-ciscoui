@@ -5,6 +5,7 @@
 # Home page
 GET     /                                       Application.index
 GET     /search                                 Application.search
+GET     /search-name                            Application.searchByName
 GET     /entries/                               Application.listAll
 GET     /entries/{dn}                           Application.entry
 

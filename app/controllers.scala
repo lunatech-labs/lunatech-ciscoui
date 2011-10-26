@@ -9,20 +9,14 @@ import collection.JavaConverters._
 import org.apache.directory.shared.ldap.model.cursor.EntryCursor
 import java.net.URLEncoder
 import org.apache.directory.shared.ldap.model.entry.{Attribute, Entry}
-
+import results.{Result, RenderXml}
 
 object Application extends Controller {
 
   def index = Template("Application/index.xml", ('baseUrl -> configuration("application.baseUrl")))
 
-  private val searchAll = {
-    connection :LdapConnection =>
-      for (res <- connection.search(configuration("ldap.baseDn"), "(&(objectclass=person)(cn=*))", SearchScope.ONELEVEL, "*").asScala)
-      yield res
-  }
-
-  def search = {
-    val searchResults = withLdapConnection(searchAll)
+  def search(operation: LdapConnection => Iterable[Entry]) :Result = {
+    val searchResults = withLdapConnection(operation)
 Xml(<CiscoIPPhoneMenu>
   <Title>Search results</Title>
   <Prompt>Found {searchResults.size} entries</Prompt>
@@ -35,8 +29,13 @@ Xml(<CiscoIPPhoneMenu>
     </MenuItem>
   }
 </CiscoIPPhoneMenu>)
+  }
 
-
+  def search(query: String) :Result = {
+    search((connection :LdapConnection) =>
+      for (res <- connection.search(configuration("ldap.baseDn"), query, SearchScope.ONELEVEL, "*").asScala)
+      yield res
+    )
   }
 
   private def correct(number: String) = {
@@ -57,9 +56,30 @@ Xml(<CiscoIPPhoneMenu>
       </DirectoryEntry>
   }
 
-  def listAll = search
+  def searchByName(name: String) = {
+    if(name == null) Xml(
+      	<CiscoIPPhoneInput>
+		      <Title>Find by name</Title>
+		      <Prompt>Enter (part of) a name</Prompt>
+		      <URL>{Router.reverse("Application.searchByName")}</URL>
+          <InputItem>
+            <DisplayName>Name</DisplayName>
+            <QueryStringParam>name</QueryStringParam>
+            <DefaultValue></DefaultValue>
+            <InputFlags>L</InputFlags>
+          </InputItem>
+	      </CiscoIPPhoneInput>)
+    else search(nameQuery(name))
+  }
 
-  def entry(dn :String) = {
+  def nameQuery(name: String) = name match {
+    case "" => "(&(objectClass=person)(cn=*))"
+    case _ => "(&(objectClass=person)(|(cn=%1$s*)(sn=%1$s*)(displayName=%1$s*)))".format(name)
+  };
+
+  def listAll = search(nameQuery(""))
+
+  def entry(dn: String) = {
     val lookup = (connection: LdapConnection) => connection.lookup(dn)
     val entry = withLdapConnection(lookup)
 
