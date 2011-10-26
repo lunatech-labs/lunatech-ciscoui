@@ -9,7 +9,7 @@ import collection.JavaConverters._
 import org.apache.directory.shared.ldap.model.cursor.EntryCursor
 import java.net.URLEncoder
 import org.apache.directory.shared.ldap.model.entry.{Attribute, Entry}
-import results.{Result, RenderXml}
+import results.Result
 
 object Application extends Controller {
 
@@ -54,23 +54,43 @@ object Application extends Controller {
   }
 
   /**Searches the LDAP directory for people by phone number, and renders a Cisco IP Phone menu with the results.
-   * If no name is given, prompts for input.
-   * @param name The number to search on.
+   * If no number is given, prompts for input.
+   * @param number The number to search on.
    */
   def searchByNumber(number: String) = {
     if(number == null) Xml(
       <CiscoIPPhoneInput>
         <Title>Find by number</Title>
-        <Prompt>Enter (part of) a number</Prompt>
+        <Prompt>Enter a number</Prompt>
         <URL>{Router.reverse("Application.searchByNumber")}</URL>
         <InputItem>
           <DisplayName>Phone number</DisplayName>
           <QueryStringParam>phone</QueryStringParam>
           <DefaultValue></DefaultValue>
-          <InputFlags>L</InputFlags>
+          <InputFlags>T</InputFlags>
         </InputItem>
       </CiscoIPPhoneInput>)
     else search(numberQuery(number))
+  }
+
+  /**Searches the LDAP directory for people by email address, and renders a Cisco IP Phone menu with the results.
+   * If no address is given, prompts for input.
+   * @param name (Part of) the e-mail address to search on.
+   */
+  def searchByEmail(address: String) = {
+    if(address == null) Xml(
+      <CiscoIPPhoneInput>
+        <Title>Find by e-mail address</Title>
+        <Prompt>Enter (part of) an address</Prompt>
+        <URL>{Router.reverse("Application.searchByEmail")}</URL>
+        <InputItem>
+          <DisplayName>E-mail address</DisplayName>
+          <QueryStringParam>address</QueryStringParam>
+          <DefaultValue></DefaultValue>
+          <InputFlags>L</InputFlags>
+        </InputItem>
+      </CiscoIPPhoneInput>)
+    else search(emailQuery(address))
   }
 
   /**
@@ -150,6 +170,14 @@ object Application extends Controller {
   private def numberQuery(number: String) = number match {
     case "" => "(&(objectClass=person)(|(telephoneNumber=*)(homePhone=*)(mobile=*)))"
     case _ => "(&(objectClass=person)(|(telephoneNumber=*%1$s*)(pager=*%1$s*)(homePhone=*%1$s*)(mobile=*%1$s*)))".format(number)
+  };
+
+  /** Returns an LDAP search filter that filters on phone number, or returns all entries in the address book.
+   * @param name The (first part of the) number to search on.
+   */
+  private def emailQuery(address: String) = address match {
+    case "" => "(&(objectClass=person)(cn=*))"
+    case _ => "(&(objectClass=person)(mail=*%s*))".format(address)
   };
 
   /** Executes an operation on a new LDAP connection, then closes the connection.
