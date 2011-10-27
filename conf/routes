@@ -4,8 +4,11 @@
 
 # Home page
 GET     /                                       Application.index
-GET     /search                                 Application.search
-GET     /search-name                            Application.searchByName
+GET     /search                                 Application.index
+GET     /search/names                           Application.searchByName
+GET     /search/numbers                         Application.searchByNumber
+GET     /search/email                           Application.searchByEmail
+GET     /search/lunatech                        Application.searchByEmail(address:'lunatech.com')
 GET     /entries/                               Application.listAll
 GET     /entries/{dn}                           Application.entry
 

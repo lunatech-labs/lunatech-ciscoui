@@ -16,7 +16,21 @@ object Application extends Controller {
   /**Renders the Cisco IP Phone main menu.
    *
    */
-  def index = Template("Application/index.xml", ('baseUrl -> configuration("application.baseUrl")))
+  def index = Xml(<CiscoIPPhoneMenu><Title>Services</Title>
+    <Prompt>Choose</Prompt>
+    <MenuItem>
+        <Name>Find by n ame</Name>
+        <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByName")}</URL>
+    </MenuItem>
+    <MenuItem>
+        <Name>Find by telephone number</Name>
+        <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByNumber")}</URL>
+    </MenuItem>
+    <MenuItem>
+        <Name>List Lunatech employees</Name>
+        <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByEmail", Map[String, Object]("address" -> "lunatech.com").asJava)}</URL>
+    </MenuItem>
+</CiscoIPPhoneMenu>)
 
   /**Lists all people in the LDAP directory as a Cisco IP Phone menu.
    * Equivalent to searchByName("")
@@ -42,7 +56,7 @@ object Application extends Controller {
       <CiscoIPPhoneInput>
         <Title>Find by name</Title>
         <Prompt>Enter (part of) a name</Prompt>
-        <URL>{Router.reverse("Application.searchByName")}</URL>
+        <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByName")}</URL>
         <InputItem>
           <DisplayName>Name</DisplayName>
           <QueryStringParam>name</QueryStringParam>
@@ -62,7 +76,7 @@ object Application extends Controller {
       <CiscoIPPhoneInput>
         <Title>Find by number</Title>
         <Prompt>Enter a number</Prompt>
-        <URL>{Router.reverse("Application.searchByNumber")}</URL>
+        <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByNumber")}</URL>
         <InputItem>
           <DisplayName>Phone number</DisplayName>
           <QueryStringParam>phone</QueryStringParam>
@@ -82,7 +96,7 @@ object Application extends Controller {
       <CiscoIPPhoneInput>
         <Title>Find by e-mail address</Title>
         <Prompt>Enter (part of) an address</Prompt>
-        <URL>{Router.reverse("Application.searchByEmail")}</URL>
+        <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByEmail")}</URL>
         <InputItem>
           <DisplayName>E-mail address</DisplayName>
           <QueryStringParam>address</QueryStringParam>
