@@ -10,6 +10,7 @@ import org.apache.directory.shared.ldap.model.cursor.EntryCursor
 import java.net.URLEncoder
 import org.apache.directory.shared.ldap.model.entry.{Attribute, Entry}
 import results.Result
+import ldap.wrapper.RichEntryConversions._
 
 object Application extends Controller {
 
@@ -19,7 +20,7 @@ object Application extends Controller {
   def index = Xml(<CiscoIPPhoneMenu><Title>Services</Title>
     <Prompt>Choose</Prompt>
     <MenuItem>
-        <Name>Find by n ame</Name>
+        <Name>Find by name</Name>
         <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByName")}</URL>
     </MenuItem>
     <MenuItem>
@@ -41,10 +42,10 @@ object Application extends Controller {
    * @param query The query to use for the search.
    */
   def search(query: String) :Result = {
-    search((connection :LdapConnection) =>
-    for (res <- connection.search(configuration("ldap.baseDn"), query, SearchScope.ONELEVEL, "*").asScala)
-    yield res
-    )
+    search { (connection :LdapConnection) =>
+        for (res <- connection.search(configuration("ldap.baseDn"), query, SearchScope.SUBTREE, "*").asScala)
+        yield res
+    }
   }
 
   /**Searches the LDAP directory for people by name, and renders a Cisco IP Phone menu with the results.
@@ -116,12 +117,12 @@ object Application extends Controller {
     val entry = withLdapConnection(lookup)
 
     Xml(<CiscoIPPhoneDirectory>
-      <Title>{entry.get("displayName").get().getValue}</Title>
+      <Title>{entry("displayName")}</Title>
       <Prompt>Choose an entry</Prompt>
-      {directoryEntry("Main", entry.get("telephoneNumber"))}
-      {directoryEntry("Office", entry.get("telephoneNumberAlternate"))}
-      {directoryEntry("Home", entry.get("homePhone"))}
-      {directoryEntry("Mobile", entry.get("mobile"))}
+      {directoryEntry("Main", entry("telephoneNumber"))}
+      {directoryEntry("Office", entry("telephoneNumberAlternate"))}
+      {directoryEntry("Home", entry("homePhone"))}
+      {directoryEntry("Mobile", entry("mobile"))}
     </CiscoIPPhoneDirectory>)
   }
 
@@ -145,7 +146,7 @@ object Application extends Controller {
       for(result <- searchResults)
     yield
       <MenuItem>
-          <Name>{result.get("displayName").get.getValue}</Name>
+          <Name>{result("displayName")}</Name>
           <URL>{configuration("application.baseUrl")}/entries/{URLEncoder.encode(result.getDn.toString, "UTF-8")}</URL>
         </MenuItem>
       }
@@ -157,14 +158,13 @@ object Application extends Controller {
    * @param label The "name" label for this entry.
    * @param attr The LDAP attribute for which to render this entry.
    */
-  private def directoryEntry(label: String, attr: Attribute) = {
-    if(attr == null || attr.get().isNull)
+  private def directoryEntry(label: String, value: String) = {
+    if(value == null || value.isEmpty)
     null
     else
     <DirectoryEntry>
         <Name>{label}</Name>
         <Telephone>{
-          val value = attr.get.getValue.toString;
           correct(value);
           }</Telephone>
       </DirectoryEntry>
