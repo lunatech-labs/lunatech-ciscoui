@@ -120,20 +120,21 @@ object Application extends Controller {
    * @param dn The DN for the object to render.
    */
   def entry(dn: String) =  {
-    val lookup = (connection: LdapConnection) => connection.lookup(dn)
+    val lookup = (connection: LdapConnection) => Option(connection.lookup(dn))
     val entry = withLdapConnection(lookup)
 
-    if(entry == null)
-      NotFound
-    else
-      Xml(<CiscoIPPhoneDirectory>
-        <Title>{entry("displayName").getOrElse("")}</Title>
-        <Prompt>Choose an entry</Prompt>
-        {directoryEntry("Main", entry("telephoneNumber"))}
-        {directoryEntry("Office", entry("telephoneNumberAlternate"))}
-        {directoryEntry("Home", entry("homePhone"))}
-        {directoryEntry("Mobile", entry("mobile"))}
-      </CiscoIPPhoneDirectory>)
+    entry match {
+      case None => NotFound
+      case Some(entry) => Xml(
+        <CiscoIPPhoneDirectory>
+          <Title>{entry("displayName").getOrElse("")}</Title>
+          <Prompt>Choose an entry</Prompt>
+          {directoryEntry("Main", entry("telephoneNumber"))}
+          {directoryEntry("Office", entry("telephoneNumberAlternate"))}
+          {directoryEntry("Home", entry("homePhone"))}
+          {directoryEntry("Mobile", entry("mobile"))}
+        </CiscoIPPhoneDirectory>)
+    }
   }
 
   /** Corrects a phonenumber such that a Cisco phone can dial it (e.g. 00031107502600).
