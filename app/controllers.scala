@@ -11,6 +11,7 @@ import java.net.URLEncoder
 import org.apache.directory.shared.ldap.model.entry.{Attribute, Entry}
 import ldap.wrapper.RichEntryConversions._
 import results.{NotFound, Result}
+import xml.NodeSeq
 
 object Application extends Controller {
 
@@ -120,7 +121,7 @@ object Application extends Controller {
       NotFound
     else
       Xml(<CiscoIPPhoneDirectory>
-        <Title>{entry("displayName")}</Title>
+        <Title>{entry("displayName").getOrElse("")}</Title>
         <Prompt>Choose an entry</Prompt>
         {directoryEntry("Main", entry("telephoneNumber"))}
         {directoryEntry("Office", entry("telephoneNumberAlternate"))}
@@ -170,7 +171,7 @@ object Application extends Controller {
             correct(v);
             }</Telephone>
         </DirectoryEntry>
-      case None => null
+      case None => NodeSeq.Empty
     }
   }
 
