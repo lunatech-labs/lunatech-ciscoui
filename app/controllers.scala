@@ -53,60 +53,66 @@ object Application extends Controller {
    * If no name is given, prompts for input.
    * @param name The (first part of the) name to search on.
    */
-  def searchByName(name: String) = {
-    if(name == null) Xml(
-      <CiscoIPPhoneInput>
-        <Title>Find by name</Title>
-        <Prompt>Enter (part of) a name</Prompt>
-        <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByName")}</URL>
-        <InputItem>
-          <DisplayName>Name</DisplayName>
-          <QueryStringParam>name</QueryStringParam>
-          <DefaultValue></DefaultValue>
-          <InputFlags>L</InputFlags>
-        </InputItem>
-      </CiscoIPPhoneInput>)
-    else search(nameQuery(name))
+  def searchByName(name: Option[String]) = {
+    name match {
+      case None => Xml(
+        <CiscoIPPhoneInput>
+          <Title>Find by name</Title>
+          <Prompt>Enter (part of) a name</Prompt>
+          <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByName")}</URL>
+          <InputItem>
+            <DisplayName>Name</DisplayName>
+            <QueryStringParam>name</QueryStringParam>
+            <DefaultValue></DefaultValue>
+            <InputFlags>L</InputFlags>
+          </InputItem>
+        </CiscoIPPhoneInput>)
+      case Some(n) => search(nameQuery(n))
+    }
   }
 
   /**Searches the LDAP directory for people by phone number, and renders a Cisco IP Phone menu with the results.
    * If no number is given, prompts for input.
    * @param number The number to search on.
    */
-  def searchByNumber(number: String) = {
-    if(number == null) Xml(
-      <CiscoIPPhoneInput>
-        <Title>Find by number</Title>
-        <Prompt>Enter a number</Prompt>
-        <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByNumber")}</URL>
-        <InputItem>
-          <DisplayName>Phone number</DisplayName>
-          <QueryStringParam>phone</QueryStringParam>
-          <DefaultValue></DefaultValue>
-          <InputFlags>T</InputFlags>
-        </InputItem>
-      </CiscoIPPhoneInput>)
-    else search(numberQuery(number))
+  def searchByNumber(number: Option[String]) = {
+    number match {
+      case None => Xml(
+        <CiscoIPPhoneInput>
+          <Title>Find by number</Title>
+          <Prompt>Enter a number</Prompt>
+          <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByNumber")}</URL>
+          <InputItem>
+            <DisplayName>Phone number</DisplayName>
+            <QueryStringParam>phone</QueryStringParam>
+            <DefaultValue></DefaultValue>
+            <InputFlags>T</InputFlags>
+          </InputItem>
+        </CiscoIPPhoneInput>)
+      case Some(n) => search(numberQuery(n))
+    }
   }
 
   /**Searches the LDAP directory for people by email address, and renders a Cisco IP Phone menu with the results.
    * If no address is given, prompts for input.
    * @param name (Part of) the e-mail address to search on.
    */
-  def searchByEmail(address: String) = {
-    if(address == null) Xml(
-      <CiscoIPPhoneInput>
-        <Title>Find by e-mail address</Title>
-        <Prompt>Enter (part of) an address</Prompt>
-        <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByEmail")}</URL>
-        <InputItem>
-          <DisplayName>E-mail address</DisplayName>
-          <QueryStringParam>address</QueryStringParam>
-          <DefaultValue></DefaultValue>
-          <InputFlags>L</InputFlags>
-        </InputItem>
-      </CiscoIPPhoneInput>)
-    else search(emailQuery(address))
+  def searchByEmail(address: Option[String]) = {
+    address match {
+      case None => Xml(
+        <CiscoIPPhoneInput>
+          <Title>Find by e-mail address</Title>
+          <Prompt>Enter (part of) an address</Prompt>
+          <URL>{configuration("application.baseUrl")  + Router.reverse("Application.searchByEmail")}</URL>
+          <InputItem>
+            <DisplayName>E-mail address</DisplayName>
+            <QueryStringParam>address</QueryStringParam>
+            <DefaultValue></DefaultValue>
+            <InputFlags>L</InputFlags>
+          </InputItem>
+        </CiscoIPPhoneInput>)
+      case Some(a) => search(emailQuery(a))
+    }
   }
 
   /**
