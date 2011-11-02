@@ -9,8 +9,8 @@ import collection.JavaConverters._
 import org.apache.directory.shared.ldap.model.cursor.EntryCursor
 import java.net.URLEncoder
 import org.apache.directory.shared.ldap.model.entry.{Attribute, Entry}
-import results.Result
 import ldap.wrapper.RichEntryConversions._
+import results.{NotFound, Result}
 
 object Application extends Controller {
 
@@ -112,18 +112,21 @@ object Application extends Controller {
    * Looks up the object for the given DN in LDAP, and renders it as a Cisco Phone Directory entry.
    * @param dn The DN for the object to render.
    */
-  def entry(dn: String) = {
+  def entry(dn: String) =  {
     val lookup = (connection: LdapConnection) => connection.lookup(dn)
     val entry = withLdapConnection(lookup)
 
-    Xml(<CiscoIPPhoneDirectory>
-      <Title>{entry("displayName")}</Title>
-      <Prompt>Choose an entry</Prompt>
-      {directoryEntry("Main", entry("telephoneNumber"))}
-      {directoryEntry("Office", entry("telephoneNumberAlternate"))}
-      {directoryEntry("Home", entry("homePhone"))}
-      {directoryEntry("Mobile", entry("mobile"))}
-    </CiscoIPPhoneDirectory>)
+    if(entry == null)
+      NotFound
+    else
+      Xml(<CiscoIPPhoneDirectory>
+        <Title>{entry("displayName")}</Title>
+        <Prompt>Choose an entry</Prompt>
+        {directoryEntry("Main", entry("telephoneNumber"))}
+        {directoryEntry("Office", entry("telephoneNumberAlternate"))}
+        {directoryEntry("Home", entry("homePhone"))}
+        {directoryEntry("Mobile", entry("mobile"))}
+      </CiscoIPPhoneDirectory>)
   }
 
   /** Corrects a phonenumber such that a Cisco phone can dial it (e.g. 00031107502600).
@@ -158,16 +161,17 @@ object Application extends Controller {
    * @param label The "name" label for this entry.
    * @param attr The LDAP attribute for which to render this entry.
    */
-  private def directoryEntry(label: String, value: String) = {
-    if(value == null || value.isEmpty)
-    null
-    else
-    <DirectoryEntry>
-        <Name>{label}</Name>
-        <Telephone>{
-          correct(value);
-          }</Telephone>
-      </DirectoryEntry>
+  private def directoryEntry(label: String, value: Option[String]) = {
+    value match {
+      case Some(v) =>
+        <DirectoryEntry>
+          <Name>{label}</Name>
+          <Telephone>{
+            correct(v);
+            }</Telephone>
+        </DirectoryEntry>
+      case None => null
+    }
   }
 
   /** Returns an LDAP search filter that filters by a person's name, or returns all entries in the address book.
