@@ -201,7 +201,7 @@ object Application extends Controller {
     case Some(number) => "(&(objectClass=person)(|(telephoneNumber=*%1$s*)(pager=*%1$s*)(homePhone=*%1$s*)(mobile=*%1$s*)))".format(number)
   };
 
-  /** Returns an LDAP search filter that filters on phone number, or returns all entries in the address book.
+  /** Returns an LDAP search filter that filters on email address, or returns all entries in the address book.
    * @param name The (first part of the) number to search on.
    */
   private def emailQuery(address: Option[String]) = address match {
