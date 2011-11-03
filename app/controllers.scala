@@ -37,7 +37,7 @@ object Application extends Controller {
   /**Lists all people in the LDAP directory as a Cisco IP Phone menu.
    * Equivalent to searchByName("")
    */
-  def listAll = search(nameQuery(""))
+  def listAll = search(nameQuery(None))
 
   /** Search LDAP using the given query string.
    * @param query The query to use for the search.
@@ -67,7 +67,8 @@ object Application extends Controller {
             <InputFlags>L</InputFlags>
           </InputItem>
         </CiscoIPPhoneInput>)
-      case Some(n) => search(nameQuery(n))
+      case Some("") => search(nameQuery(None))
+      case Some(n) => search(nameQuery(name))
     }
   }
 
@@ -89,7 +90,8 @@ object Application extends Controller {
             <InputFlags>T</InputFlags>
           </InputItem>
         </CiscoIPPhoneInput>)
-      case Some(n) => search(numberQuery(n))
+      case Some("") => search(numberQuery(None))
+      case Some(n) => search(numberQuery(number))
     }
   }
 
@@ -111,7 +113,8 @@ object Application extends Controller {
             <InputFlags>L</InputFlags>
           </InputItem>
         </CiscoIPPhoneInput>)
-      case Some(a) => search(emailQuery(a))
+      case Some("") => search(emailQuery(None))
+      case Some(a) => search(emailQuery(address))
     }
   }
 
@@ -185,25 +188,25 @@ object Application extends Controller {
   /** Returns an LDAP search filter that filters by a person's name, or returns all entries in the address book.
    * @param name The (first part of the) name to search on.
    */
-  private def nameQuery(name: String) = name match {
-    case "" => "(&(objectClass=person)(cn=*))"
-    case _ => "(&(objectClass=person)(|(cn=%1$s*)(sn=%1$s*)(displayName=%1$s*)))".format(name)
+  private def nameQuery(name: Option[String]) = name match {
+    case None => "(&(objectClass=person)(cn=*))"
+    case Some(name) => "(&(objectClass=person)(|(cn=%1$s*)(sn=%1$s*)(displayName=%1$s*)))".format(name)
   };
 
   /** Returns an LDAP search filter that filters on phone number, or returns all entries in the address book.
    * @param name The (first part of the) number to search on.
    */
-  private def numberQuery(number: String) = number match {
-    case "" => "(&(objectClass=person)(|(telephoneNumber=*)(homePhone=*)(mobile=*)))"
-    case _ => "(&(objectClass=person)(|(telephoneNumber=*%1$s*)(pager=*%1$s*)(homePhone=*%1$s*)(mobile=*%1$s*)))".format(number)
+  private def numberQuery(number: Option[String]) = number match {
+    case None => "(&(objectClass=person)(|(telephoneNumber=*)(homePhone=*)(mobile=*)))"
+    case Some(number) => "(&(objectClass=person)(|(telephoneNumber=*%1$s*)(pager=*%1$s*)(homePhone=*%1$s*)(mobile=*%1$s*)))".format(number)
   };
 
   /** Returns an LDAP search filter that filters on phone number, or returns all entries in the address book.
    * @param name The (first part of the) number to search on.
    */
-  private def emailQuery(address: String) = address match {
-    case "" => "(&(objectClass=person)(cn=*))"
-    case _ => "(&(objectClass=person)(mail=*%s*))".format(address)
+  private def emailQuery(address: Option[String]) = address match {
+    case None => "(&(objectClass=person)(cn=*))"
+    case Some(address) => "(&(objectClass=person)(mail=*%s*))".format(address)
   };
 
   /** Executes an operation on a new LDAP connection, then closes the connection.
