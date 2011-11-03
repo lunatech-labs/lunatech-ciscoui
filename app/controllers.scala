@@ -154,12 +154,12 @@ object Application extends Controller {
       <Title>Search results</Title>
       <Prompt>Found {searchResults.size} entries</Prompt>
       {
-      for(result <- searchResults)
-    yield
-      <MenuItem>
-          <Name>{result("displayName")}</Name>
-          <URL>{configuration("application.baseUrl")}/entries/{URLEncoder.encode(result.getDn.toString, "UTF-8")}</URL>
-        </MenuItem>
+        searchResults.map { result =>
+          <MenuItem>
+            <Name>{result("displayName")}</Name>
+            <URL>{configuration("application.baseUrl")}/entries/{URLEncoder.encode(result.getDn.toString, "UTF-8")}</URL>
+          </MenuItem>
+        }
       }
     </CiscoIPPhoneMenu>)
   }
